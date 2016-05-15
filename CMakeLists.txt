@@ -7,7 +7,9 @@ include_directories(${INDI_INCLUDE_DIR})
 
 add_subdirectory(INDIProperties/)
 include_directories(${INDI_PROPERTIES_INCLUDE_DIRS})
+add_subdirectory(libgphoto-cpp)
+include_directories(${GPHOTO_CPP_INCLUDE_DIRS})
 add_executable(indi_gphoto_ng_ccd gphoto_ccd.cpp)
 
-target_link_libraries(indi_gphoto_ng_ccd indi_properties indidriver)
+target_link_libraries(indi_gphoto_ng_ccd indi_properties gphoto++ indidriver)
 
