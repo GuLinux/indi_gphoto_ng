@@ -6,7 +6,8 @@ find_package(INDI REQUIRED)
 include_directories(${INDI_INCLUDE_DIR})
 
 add_subdirectory(INDIProperties/)
+include_directories(${INDI_PROPERTIES_INCLUDE_DIRS})
 add_executable(indi_gphoto_ng_ccd gphoto_ccd.cpp)
 
-target_link_libraries(indi_gphoto_ng_ccd indidriver)
+target_link_libraries(indi_gphoto_ng_ccd indi_properties indidriver)
 

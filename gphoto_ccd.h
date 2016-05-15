@@ -3,6 +3,7 @@
 
 
 #include <indiccd.h>
+#include "INDIProperties/src/indi_properties_map.h"
 class GPhotoCCD : public INDI::CCD
 {
 public:
@@ -23,6 +24,8 @@ protected:
     void TimerHit();
 
 private:
+    enum PropertiesType { Persistent, Device };
+    INDI::Properties::PropertiesMap<PropertiesType> properties;
     // Utility functions
     float CalcTimeLeft();
     void  setupParams();
