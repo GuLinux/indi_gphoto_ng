@@ -1,0 +1,6 @@
+[submodule "INDIProperties"]
+	path = INDIProperties
+	url = git@gulinux.net:repos/private/marco/INDIProperties.git
+[submodule "libgphoto-cpp"]
+	path = libgphoto-cpp
+	url = https://github.com/GuLinux/libgphoto-cpp.git
