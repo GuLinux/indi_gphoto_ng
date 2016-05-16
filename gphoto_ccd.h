@@ -6,6 +6,8 @@
 #include "indi_properties_map.h"
 #include "camera.h"
 
+namespace INDI {
+namespace GPhoto {
 class GPhotoCCD : public INDI::CCD
 {
 public:
@@ -27,9 +29,7 @@ protected:
 private:
     enum PropertiesType { Persistent, Device };
     INDI::Properties::PropertiesMap<PropertiesType> properties;
-    GPhotoCPP::LoggerPtr logger;
-    GPhotoCPP::DriverPtr driver;
-    GPhotoCPP::CameraPtr camera;
+    Camera::ptr camera;
     
     bool set_iso(const std::vector<ISState> &iso_switches);
 
@@ -47,5 +47,6 @@ private:
     int   timerID;
 
 };
-
+}
+}
 #endif // INDI_GPHOTO_CCD_H

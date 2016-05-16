@@ -2,13 +2,14 @@
 #include <memory>
 
 #include "gphoto_ccd.h"
-#include "GPhoto++.h"
 #include "c++/containers_streams.h"
+#include "realcamera.h"
+#include "simulationcamera.h"
 
 using namespace std;
 using namespace GuLinux;
 using namespace INDI::Properties;
-
+using namespace INDI::GPhoto;
 const int POLLMS           = 500;       /* Polling interval 500 ms */
 
 
@@ -53,18 +54,6 @@ void ISSnoopDevice (XMLEle *root)
 
 GPhotoCCD::GPhotoCCD()
 {
-    logger = make_shared<GPhotoCPP::Logger>([&](const string &m, GPhotoCPP::Logger::Level l) {
-        static map<GPhotoCPP::Logger::Level, INDI::Logger::VerbosityLevel> levels {
-            {GPhotoCPP::Logger::ERROR, INDI::Logger::DBG_ERROR },
-            {GPhotoCPP::Logger::WARNING, INDI::Logger::DBG_WARNING },
-            {GPhotoCPP::Logger::INFO, INDI::Logger::DBG_SESSION },
-            {GPhotoCPP::Logger::DEBUG, INDI::Logger::DBG_DEBUG },
-            {GPhotoCPP::Logger::TRACE, INDI::Logger::DBG_EXTRA_1 },
-        };
-        DEBUG(levels[l], m.c_str());
-    });
-    driver = make_shared<GPhotoCPP::Driver>(logger);
-
     InExposure = false;
 }
 
@@ -74,15 +63,10 @@ GPhotoCCD::GPhotoCCD()
 bool GPhotoCCD::Connect()
 {
     DEBUG(INDI::Logger::DBG_DEBUG, __PRETTY_FUNCTION__);
-    if(isSimulation())
-        return true;
-
     try {
-        camera =  driver->autodetect();
-        if(!camera)
-            return false;
-    } catch(GPhotoCPP::Exception &e) {
-        DEBUG(INDI::Logger::DBG_ERROR, "Can not open camera: Power OK?");
+        camera =  isSimulation() ? Camera::ptr{new SimulationCamera} : Camera::ptr{new RealCamera{this}};
+    } catch(std::exception &e) {
+        DEBUG(INDI::Logger::DBG_ERROR, e.what());
         return false;
     }
     IDMessage(getDeviceName(), "Simple CCD connected successfully!");
@@ -152,17 +136,12 @@ bool GPhotoCCD::updateProperties()
     if (isConnected()) {
         // Dummy values for now
         SetCCDParams(1280, 1024, 8, 5.4, 5.4);
-	properties[Device].add_switch("ISO", this, {getDeviceName(), "ISO", "ISO", "Image Settings"}, ISR_1OFMANY, [&](ISState *states, char **names, int n) {
-	    return set_iso(cpstream<ISState>(states, n).get());
-	});
+        properties[Device].add_switch("ISO", this, {getDeviceName(), "ISO", "ISO", "Image Settings"}, ISR_1OFMANY, [&](ISState *states, char **names, int n) {
+            return set_iso(cpstream<ISState>(states, n).get());
+        });
 
-        if(isSimulation()) {
-            for(auto iso: vector<string>{"100", "200", "400", "800", "1600"})
-                properties[Device].switch_p("ISO").add(iso, iso, iso=="200" ? ISS_ON : ISS_OFF);
-        } else {
-            for(auto iso: camera->settings().iso_choices())
-                properties[Device].switch_p("ISO").add(iso, iso, iso == camera->settings().iso() ? ISS_ON : ISS_OFF);
-        }
+        for(auto iso: camera->available_iso() )
+            properties[Device].switch_p("ISO").add(iso, iso, iso==camera->current_iso() ? ISS_ON : ISS_OFF);
         properties[Device].switch_p("ISO")->do_register();
         // Start the timer
         SetTimer(POLLMS);
@@ -175,7 +154,7 @@ bool GPhotoCCD::updateProperties()
 
 bool GPhotoCCD::set_iso(const vector< ISState >& iso_switches)
 {
-  return true;
+    return true;
 }
 
 
