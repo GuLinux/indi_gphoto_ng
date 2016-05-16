@@ -12,6 +12,8 @@ class GPhotoCCD : public INDI::CCD
 {
 public:
     GPhotoCCD();
+    
+    virtual bool ISNewSwitch(const char* dev, const char* name, ISState* states, char* names[], int n);
 
 protected:
     // General device functions
@@ -31,8 +33,6 @@ private:
     INDI::Properties::PropertiesMap<PropertiesType> properties;
     Camera::ptr camera;
     
-    bool set_iso(const std::vector<ISState> &iso_switches);
-
     // Utility functions
     float CalcTimeLeft();
     void  grabImage();

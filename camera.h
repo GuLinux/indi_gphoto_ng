@@ -28,6 +28,7 @@ public:
   typedef std::shared_ptr<Camera> ptr;
   virtual std::vector<std::string> available_iso() = 0;
   virtual std::string current_iso() = 0;
+  virtual bool set_iso(const std::string &iso) = 0;
 };
 }
 }

@@ -70,3 +70,11 @@ string RealCamera::current_iso()
 {
   return d->camera->settings().iso();
 }
+
+bool RealCamera::set_iso(const string& iso)
+{
+  d->camera->settings().set_iso(iso);
+  d->camera->save_settings();
+  return current_iso() == iso;
+}
+

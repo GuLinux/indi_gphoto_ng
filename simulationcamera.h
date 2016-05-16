@@ -32,6 +32,7 @@ public:
     ~SimulationCamera();
     virtual std::vector< std::string > available_iso();
     virtual std::string current_iso();
+    virtual bool set_iso(const std::string &iso);
 private:
   D_PTR;
 };

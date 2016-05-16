@@ -137,7 +137,11 @@ bool GPhotoCCD::updateProperties()
         // Dummy values for now
         SetCCDParams(1280, 1024, 8, 5.4, 5.4);
         properties[Device].add_switch("ISO", this, {getDeviceName(), "ISO", "ISO", "Image Settings"}, ISR_1OFMANY, [&](ISState *states, char **names, int n) {
-            return set_iso(cpstream<ISState>(states, n).get());
+	  size_t index = 0;
+	  auto on_switch = cpstream<ISState>(states, n).transform<list<pair<string, ISState>>>([&](ISState i){
+	    return make_pair(names[index++], i);
+	  }).first([](pair<string, ISState> i){ return i.second == ISS_ON; });
+	  return on_switch && camera->set_iso((*on_switch).first);
         });
 
         for(auto iso: camera->available_iso() )
@@ -152,10 +156,6 @@ bool GPhotoCCD::updateProperties()
     return true;
 }
 
-bool GPhotoCCD::set_iso(const vector< ISState >& iso_switches)
-{
-    return true;
-}
 
 
 
@@ -265,3 +265,11 @@ void GPhotoCCD::grabImage()
     // Let INDI::CCD know we're done filling the image buffer
     ExposureComplete(&PrimaryCCD);
 }
+
+bool GPhotoCCD::ISNewSwitch(const char* dev, const char* name, ISState* states, char* names[], int n)
+{
+    if(properties.update(dev, name, states, names, n))
+      return true;
+    return INDI::CCD::ISNewSwitch(dev, name, states, names, n);
+}
+

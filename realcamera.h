@@ -33,6 +33,7 @@ public:
     ~RealCamera();
     virtual std::vector< std::string > available_iso();
     virtual std::string current_iso();
+    bool set_iso(const std::__cxx11::string& iso);
 private:
   D_PTR;
 };

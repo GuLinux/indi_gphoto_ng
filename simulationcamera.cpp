@@ -53,3 +53,10 @@ string SimulationCamera::current_iso()
 {
   return d->current_iso;
 }
+
+bool SimulationCamera::set_iso(const string& iso)
+{
+  d->current_iso = iso;
+  return true;
+}
+
