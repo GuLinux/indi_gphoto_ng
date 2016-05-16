@@ -2,9 +2,7 @@
 #include <memory>
 
 #include "gphoto_ccd.h"
-#include "utils/logger.h"
-#include "driver.h"
-#include "backend/exceptions.h"
+#include "GPhoto++.h"
 
 using namespace std;
 using namespace GuLinux;
@@ -143,7 +141,9 @@ bool GPhotoCCD::updateProperties()
     if (isConnected()) {
         // Dummy values for now
         SetCCDParams(1280, 1024, 8, 5.4, 5.4);
-
+ 	properties[Device].add_switch("ISO", this, {getDeviceName(), "ISO", "ISO", "Image settings"}, ISR_1OFMANY, [&](ISState *states, char **names, int n){ return true; });
+	for(auto iso: camera->settings().iso_choices())
+	  properties[Device].switch_p("ISO").add(iso, iso, iso == camera->settings().iso() ? ISS_ON : ISS_OFF);
         // Start the timer
         SetTimer(POLLMS);
     } else {
@@ -180,18 +180,6 @@ bool GPhotoCCD::AbortExposure()
     InExposure = false;
     return true;
 }
-
-/**************************************************************************************
-** Client is asking us to set a new temperature
-***************************************************************************************/
-int GPhotoCCD::SetTemperature(double temperature)
-{
-    TemperatureRequest = temperature;
-
-    // 0 means it will take a while to change the temperature
-    return 0;
-}
-
 /**************************************************************************************
 ** How much longer until exposure is done?
 ***************************************************************************************/
