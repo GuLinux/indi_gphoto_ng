@@ -136,12 +136,9 @@ bool GPhotoCCD::updateProperties()
     if (isConnected()) {
         // Dummy values for now
         SetCCDParams(1280, 1024, 8, 5.4, 5.4);
-        properties[Device].add_switch("ISO", this, {getDeviceName(), "ISO", "ISO", "Image Settings"}, ISR_1OFMANY, [&](ISState *states, char **names, int n) {
-	  size_t index = 0;
-	  auto on_switch = cpstream<ISState>(states, n).transform<list<pair<string, ISState>>>([&](ISState i){
-	    return make_pair(names[index++], i);
-	  }).first([](pair<string, ISState> i){ return i.second == ISS_ON; });
-	  return on_switch && camera->set_iso((*on_switch).first);
+        properties[Device].add_switch("ISO", this, {getDeviceName(), "ISO", "ISO", "Image Settings"}, ISR_1OFMANY, [&](const vector<Switch::UpdateArgs> &states) {
+	  auto on_switch = make_stream(states).first([](const Switch::UpdateArgs &s){ return get<ISState>(s) == ISS_ON; });
+	  return on_switch && camera->set_iso(get<string>(*on_switch));
         });
 
         for(auto iso: camera->available_iso() )
