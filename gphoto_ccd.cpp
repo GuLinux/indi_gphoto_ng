@@ -2,14 +2,16 @@
 #include <memory>
 
 #include "gphoto_ccd.h"
+#include "utils/logger.h"
+#include "driver.h"
+#include "backend/exceptions.h"
+
+using namespace std;
+using namespace GuLinux;
+using namespace INDI::Properties;
 
 const int POLLMS           = 500;       /* Polling interval 500 ms */
-const int MAX_CCD_TEMP     = 45;		/* Max CCD temperature */
-const int MIN_CCD_TEMP	   = -55;		/* Min CCD temperature */
-const float TEMP_THRESHOLD = .25;		/* Differential temperature threshold (C)*/
 
-/* Macro shortcut to CCD temperature value */
-#define currentCCDTemperature   TemperatureN[0].value
 
 std::unique_ptr<GPhotoCCD> simpleCCD(new GPhotoCCD());
 
@@ -52,6 +54,18 @@ void ISSnoopDevice (XMLEle *root)
 
 GPhotoCCD::GPhotoCCD()
 {
+    logger = make_shared<GPhotoCPP::Logger>([&](const string &m, GPhotoCPP::Logger::Level l) {
+        static map<GPhotoCPP::Logger::Level, INDI::Logger::VerbosityLevel> levels {
+            {GPhotoCPP::Logger::ERROR, INDI::Logger::DBG_ERROR },
+            {GPhotoCPP::Logger::WARNING, INDI::Logger::DBG_WARNING },
+            {GPhotoCPP::Logger::INFO, INDI::Logger::DBG_SESSION },
+            {GPhotoCPP::Logger::DEBUG, INDI::Logger::DBG_DEBUG },
+            {GPhotoCPP::Logger::TRACE, INDI::Logger::DBG_EXTRA_1 },
+        };
+        DEBUG(levels[l], m.c_str());
+    });
+    driver = make_shared<GPhotoCPP::Driver>(logger);
+
     InExposure = false;
 }
 
@@ -60,6 +74,14 @@ GPhotoCCD::GPhotoCCD()
 ***************************************************************************************/
 bool GPhotoCCD::Connect()
 {
+    try {
+        camera =  driver->autodetect();
+        if(!camera)
+            return false;
+    } catch(GPhotoCPP::Exception &e) {
+        DEBUG(INDI::Logger::DBG_ERROR, "Can not open camera: Power OK?");
+        return false;
+    }
     IDMessage(getDeviceName(), "Simple CCD connected successfully!");
 
     // Let's set a timer that checks teleCCDs status every POLLMS milliseconds.
@@ -73,6 +95,7 @@ bool GPhotoCCD::Connect()
 ***************************************************************************************/
 bool GPhotoCCD::Disconnect()
 {
+    camera.reset();
     IDMessage(getDeviceName(), "Simple CCD disconnected successfully!");
     return true;
 }
@@ -82,7 +105,7 @@ bool GPhotoCCD::Disconnect()
 ***************************************************************************************/
 const char * GPhotoCCD::getDefaultName()
 {
-    return "Simple CCD";
+    return "GPhoto NG CCD";
 }
 
 /**************************************************************************************
@@ -93,9 +116,13 @@ bool GPhotoCCD::initProperties()
     // Must init parent properties first!
     INDI::CCD::initProperties();
 
+    PrimaryCCD.setMinMaxStep("CCD_EXPOSURE", "CCD_EXPOSURE_VALUE", 0.001, 3600, 1, false);
+
     // We set the CCD capabilities
-    uint32_t cap = CCD_CAN_ABORT | CCD_HAS_SHUTTER;
-    SetCCDCapability(cap);
+    SetCCDCapability(CCD_CAN_ABORT | CCD_HAS_SHUTTER);
+
+    /* JM 2014-05-20 Make PrimaryCCD.ImagePixelSizeNP writable since we can't know for now the pixel size and bit depth from gphoto */
+    PrimaryCCD.getCCDInfo()->p = IP_RW;
 
     // Add Debug, Simulator, and Configuration controls
     addAuxControls();
@@ -113,32 +140,19 @@ bool GPhotoCCD::updateProperties()
     // Call parent update properties first
     INDI::CCD::updateProperties();
 
-    if (isConnected())
-    {
-        // Let's get parameters now from CCD
-        setupParams();
+    if (isConnected()) {
+        // Dummy values for now
+        SetCCDParams(1280, 1024, 8, 5.4, 5.4);
 
         // Start the timer
         SetTimer(POLLMS);
+    } else {
+        properties.clear(GPhotoCCD::Device);
     }
 
     return true;
 }
 
-/**************************************************************************************
-** Setting up CCD parameters
-***************************************************************************************/
-void GPhotoCCD::setupParams()
-{
-    // Our CCD is an 8 bit CCD, 1280x1024 resolution, with 5.4um square pixels.
-    SetCCDParams(1280, 1024, 8, 5.4, 5.4);
-
-    // Let's calculate how much memory we need for the primary CCD buffer
-    int nbuf;
-    nbuf=PrimaryCCD.getXRes()*PrimaryCCD.getYRes() * PrimaryCCD.getBPP()/8;
-    nbuf+=512;                      //  leave a little extra at the end
-    PrimaryCCD.setFrameBufferSize(nbuf);
-}
 
 /**************************************************************************************
 ** Client is asking us to start an exposure
@@ -230,37 +244,6 @@ void GPhotoCCD::TimerHit()
             // Just update time left in client
             PrimaryCCD.setExposureLeft(timeleft);
 
-    }
-
-    // TemperatureNP is defined in INDI::CCD
-    switch (TemperatureNP.s)
-    {
-    case IPS_IDLE:
-    case IPS_OK:
-        break;
-
-    case IPS_BUSY:
-        /* If target temperature is higher, then increase current CCD temperature */
-        if (currentCCDTemperature < TemperatureRequest)
-            currentCCDTemperature++;
-        /* If target temperature is lower, then decrese current CCD temperature */
-        else if (currentCCDTemperature > TemperatureRequest)
-            currentCCDTemperature--;
-        /* If they're equal, stop updating */
-        else
-        {
-            TemperatureNP.s = IPS_OK;
-            IDSetNumber(&TemperatureNP, "Target temperature reached.");
-
-            break;
-        }
-
-        IDSetNumber(&TemperatureNP, NULL);
-
-        break;
-
-    case IPS_ALERT:
-        break;
     }
 
     SetTimer(POLLMS);

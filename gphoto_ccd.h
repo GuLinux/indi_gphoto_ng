@@ -3,7 +3,9 @@
 
 
 #include <indiccd.h>
-#include "INDIProperties/src/indi_properties_map.h"
+#include "indi_properties_map.h"
+#include "camera.h"
+
 class GPhotoCCD : public INDI::CCD
 {
 public:
@@ -26,9 +28,12 @@ protected:
 private:
     enum PropertiesType { Persistent, Device };
     INDI::Properties::PropertiesMap<PropertiesType> properties;
+    GPhotoCPP::LoggerPtr logger;
+    GPhotoCPP::DriverPtr driver;
+    GPhotoCPP::CameraPtr camera;
+
     // Utility functions
     float CalcTimeLeft();
-    void  setupParams();
     void  grabImage();
 
     // Are we exposing?
