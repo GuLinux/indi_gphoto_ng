@@ -73,6 +73,10 @@ GPhotoCCD::GPhotoCCD()
 ***************************************************************************************/
 bool GPhotoCCD::Connect()
 {
+    DEBUG(INDI::Logger::DBG_DEBUG, __PRETTY_FUNCTION__);
+    if(isSimulation())
+        return true;
+
     try {
         camera =  driver->autodetect();
         if(!camera)
@@ -94,6 +98,10 @@ bool GPhotoCCD::Connect()
 ***************************************************************************************/
 bool GPhotoCCD::Disconnect()
 {
+    DEBUG(INDI::Logger::DBG_DEBUG, __PRETTY_FUNCTION__);
+    if(isSimulation())
+        return true;
+
     camera.reset();
     IDMessage(getDeviceName(), "Simple CCD disconnected successfully!");
     return true;
@@ -114,6 +122,7 @@ bool GPhotoCCD::initProperties()
 {
     // Must init parent properties first!
     INDI::CCD::initProperties();
+    DEBUG(INDI::Logger::DBG_DEBUG, __PRETTY_FUNCTION__);
 
     PrimaryCCD.setMinMaxStep("CCD_EXPOSURE", "CCD_EXPOSURE_VALUE", 0.001, 3600, 1, false);
 
@@ -138,13 +147,22 @@ bool GPhotoCCD::updateProperties()
 {
     // Call parent update properties first
     INDI::CCD::updateProperties();
+    DEBUG(INDI::Logger::DBG_DEBUG, __PRETTY_FUNCTION__);
 
     if (isConnected()) {
         // Dummy values for now
         SetCCDParams(1280, 1024, 8, 5.4, 5.4);
- 	properties[Device].add_switch("ISO", this, {getDeviceName(), "ISO", "ISO", "Image settings"}, ISR_1OFMANY, [&](ISState *states, char **names, int n){ return true; });
-	for(auto iso: camera->settings().iso_choices())
-	  properties[Device].switch_p("ISO").add(iso, iso, iso == camera->settings().iso() ? ISS_ON : ISS_OFF);
+	properties[Device].add_switch("ISO", this, {getDeviceName(), "ISO", "ISO", "Image settings"}, ISR_1OFMANY, [&](ISState *states, char **names, int n) {
+	    return set_iso(cpstream<ISState>(states, n).get());
+	});
+
+        if(isSimulation()) {
+            for(auto iso: vector<string>{"100", "200", "400", "800", "1600"})
+                properties[Device].switch_p("ISO").add(iso, iso, iso=="200" ? ISS_ON : ISS_OFF);
+        } else {
+            for(auto iso: camera->settings().iso_choices())
+                properties[Device].switch_p("ISO").add(iso, iso, iso == camera->settings().iso() ? ISS_ON : ISS_OFF);
+        }
         // Start the timer
         SetTimer(POLLMS);
     } else {
@@ -153,6 +171,12 @@ bool GPhotoCCD::updateProperties()
 
     return true;
 }
+
+bool GPhotoCCD::set_iso(const vector< ISState >& iso_switches)
+{
+  return true;
+}
+
 
 
 /**************************************************************************************

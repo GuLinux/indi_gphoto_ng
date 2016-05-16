@@ -30,6 +30,8 @@ private:
     GPhotoCPP::LoggerPtr logger;
     GPhotoCPP::DriverPtr driver;
     GPhotoCPP::CameraPtr camera;
+    
+    bool set_iso(const std::vector<ISState> &iso_switches);
 
     // Utility functions
     float CalcTimeLeft();
