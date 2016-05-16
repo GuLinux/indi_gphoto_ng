@@ -3,6 +3,7 @@
 
 #include "gphoto_ccd.h"
 #include "GPhoto++.h"
+#include "c++/containers_streams.h"
 
 using namespace std;
 using namespace GuLinux;
