@@ -152,7 +152,7 @@ bool GPhotoCCD::updateProperties()
     if (isConnected()) {
         // Dummy values for now
         SetCCDParams(1280, 1024, 8, 5.4, 5.4);
-	properties[Device].add_switch("ISO", this, {getDeviceName(), "ISO", "ISO", "Image settings"}, ISR_1OFMANY, [&](ISState *states, char **names, int n) {
+	properties[Device].add_switch("ISO", this, {getDeviceName(), "ISO", "ISO", "Image Settings"}, ISR_1OFMANY, [&](ISState *states, char **names, int n) {
 	    return set_iso(cpstream<ISState>(states, n).get());
 	});
 
@@ -163,6 +163,7 @@ bool GPhotoCCD::updateProperties()
             for(auto iso: camera->settings().iso_choices())
                 properties[Device].switch_p("ISO").add(iso, iso, iso == camera->settings().iso() ? ISS_ON : ISS_OFF);
         }
+        properties[Device].switch_p("ISO")->do_register();
         // Start the timer
         SetTimer(POLLMS);
     } else {
