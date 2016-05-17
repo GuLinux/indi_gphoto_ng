@@ -21,14 +21,17 @@
 #include "realcamera.h"
 #include "logger.h"
 #include "GPhoto++.h"
-
+#include "c++/containers_streams.h"
 using namespace std;
+using namespace GuLinux;
 using namespace INDI::GPhoto;
 class RealCamera::Private {
 public:
+    enum ImageType { RAW, JPEG };
     Private(INDI::CCD *device, RealCamera *q);
     INDI::CCD *device;
     Logger log;
+    map<ImageType, GPhotoCPP::ReadImage::ptr> image_parsers;
     shared_ptr< GPhotoCPP::Logger > gphoto_logger;
     shared_ptr< GPhotoCPP::Driver > driver;
     GPhotoCPP::CameraPtr camera;
@@ -37,7 +40,11 @@ private:
     RealCamera *q;
 };
 
-RealCamera::Private::Private(INDI::CCD* device, RealCamera* q) : device{device}, log {device, "GPhotoCamera"}, q{q}
+RealCamera::Private::Private(INDI::CCD* device, RealCamera* q) 
+  : device{device},
+  log {device, "GPhotoCamera"},
+  image_parsers{{RAW, make_shared<GPhotoCPP::ReadRawImage>()}, {JPEG, make_shared<GPhotoCPP::ReadJPEGImage>()}},
+  q{q}
 {
     gphoto_logger = make_shared<GPhotoCPP::Logger>([&](const string &m, GPhotoCPP::Logger::Level l) {
         static map<GPhotoCPP::Logger::Level, INDI::Logger::VerbosityLevel> levels {
@@ -98,9 +105,36 @@ INDI::GPhoto::Camera::ShootStatus RealCamera::shoot_status() const
 INDI::GPhoto::Camera::WriteImage RealCamera::write_image() const
 {
   return [&](CCDChip &chip){
-    // TODO
+    d->current_shoot->camera_file().wait();
+    d->log.session() << "Exposure complete, downloading image...";
+    GPhotoCPP::CameraFilePtr  file = d->current_shoot->camera_file().get();
     d->current_shoot.reset();
-    return false;
+    string extension = make_stream(file->file().substr(file->file().rfind(".")+1)).transform<string>(::tolower);
+    auto image_parser = (extension == "jpg" || extension == "jpeg") ? d->image_parsers[Private::JPEG] : d->image_parsers[Private::RAW];
+    d->log.debug() << "Image filename" << file->file() << ", extension: " << extension;
+    vector<uint8_t> original_data = file->data();
+    GPhotoCPP::ReadImage::Image image;
+    try {
+      image = image_parser->read(original_data, file->file());
+    } catch(std::exception &e) {
+      d->log.error() << "Exposure failed to parse image: " << e.what();
+      return false;
+    }
+    d->log.debug() << "Copying image: w=" << image.w << ", h=" << image.h << ", bpp=" << image.bpp << ", channels=" << image.channels.size();
+    chip.setFrame(0, 0, image.w, image.h);
+    chip.setResolution(image.w, image.h);
+    chip.setNAxis(image.channels.size() == 3 ? 3 : 2);
+    chip.setBPP(image.bpp);
+    
+    typedef std::pair<GPhotoCPP::ReadImage::Image::Channel, GPhotoCPP::ReadImage::Image::Pixels> channel;
+    chip.setFrameBufferSize(make_stream(image.channels).transform<list<size_t>>([](const channel &c){ return c.second.size(); }).accumulate(), true);
+    size_t data_begin = 0;
+    for(auto c: image.channels) {
+      std::move(c.second.begin(), c.second.end(), chip.getFrameBuffer() + data_begin);
+      data_begin += c.second.size();
+    }
+    chip.setImageExtension("fits");
+    return true;
   };
 }
 
