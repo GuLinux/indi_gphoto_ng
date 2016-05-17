@@ -19,6 +19,7 @@
  */
 
 #include "realcamera.h"
+#include "logger.h"
 #include "GPhoto++.h"
 
 using namespace std;
@@ -27,16 +28,18 @@ class RealCamera::Private {
 public:
     Private(INDI::CCD *device, RealCamera *q);
     INDI::CCD *device;
-    shared_ptr< GPhotoCPP::Logger > logger;
+    Logger log;
+    shared_ptr< GPhotoCPP::Logger > gphoto_logger;
     shared_ptr< GPhotoCPP::Driver > driver;
     GPhotoCPP::CameraPtr camera;
+    GPhotoCPP::Camera::ShotPtr current_shoot;
 private:
     RealCamera *q;
 };
 
-RealCamera::Private::Private(INDI::CCD* device, RealCamera* q) : device{device}, q{q}
+RealCamera::Private::Private(INDI::CCD* device, RealCamera* q) : device{device}, log {device, "GPhotoCamera"}, q{q}
 {
-    logger = make_shared<GPhotoCPP::Logger>([&](const string &m, GPhotoCPP::Logger::Level l) {
+    gphoto_logger = make_shared<GPhotoCPP::Logger>([&](const string &m, GPhotoCPP::Logger::Level l) {
         static map<GPhotoCPP::Logger::Level, INDI::Logger::VerbosityLevel> levels {
             {GPhotoCPP::Logger::ERROR, INDI::Logger::DBG_ERROR },
             {GPhotoCPP::Logger::WARNING, INDI::Logger::DBG_WARNING },
@@ -46,7 +49,7 @@ RealCamera::Private::Private(INDI::CCD* device, RealCamera* q) : device{device},
         };
         DEBUGDEVICE(device->getDeviceName(), levels[l], m.c_str());
     });
-    driver = make_shared<GPhotoCPP::Driver>(logger);
+    driver = make_shared<GPhotoCPP::Driver>(gphoto_logger);
     camera =  driver->autodetect();
     if(! camera)
       throw std::runtime_error("Unable to find camera");
@@ -80,19 +83,25 @@ bool RealCamera::set_iso(const string& iso)
 
 void RealCamera::shoot(INDI::GPhoto::Camera::Seconds seconds)
 {
-  // TODO
+  d->current_shoot = d->camera->control().shoot(seconds);
 }
 
 INDI::GPhoto::Camera::ShootStatus RealCamera::shoot_status() const
 {
-  // TODO
-  return {};
+  if(! d->current_shoot )
+    return {Camera::ShootStatus::Idle};
+  if( d->current_shoot->elapsed() >= d->current_shoot->duration() )
+    return {Camera::ShootStatus::Finished, d->current_shoot->elapsed(), Seconds{0} };
+  return {Camera::ShootStatus::Finished, d->current_shoot->elapsed(), d->current_shoot->duration() - d->current_shoot->elapsed() };
 }
 
 INDI::GPhoto::Camera::WriteImage RealCamera::write_image() const
 {
-  // TODO
-  return {};
+  return [&](CCDChip &chip){
+    // TODO
+    d->current_shoot.reset();
+    return false;
+  };
 }
 
 
