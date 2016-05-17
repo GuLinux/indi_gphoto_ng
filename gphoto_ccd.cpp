@@ -111,7 +111,7 @@ bool GPhotoCCD::initProperties()
     PrimaryCCD.setMinMaxStep("CCD_EXPOSURE", "CCD_EXPOSURE_VALUE", 0.001, 3600, 1, false);
 
     // We set the CCD capabilities
-    SetCCDCapability(CCD_CAN_ABORT | CCD_HAS_SHUTTER);
+    SetCCDCapability(CCD_HAS_SHUTTER);
 
     /* JM 2014-05-20 Make PrimaryCCD.ImagePixelSizeNP writable since we can't know for now the pixel size and bit depth from gphoto */
     PrimaryCCD.getCCDInfo()->p = IP_RW;
@@ -174,14 +174,6 @@ bool GPhotoCCD::StartExposure(float duration)
     return true;
 }
 
-/**************************************************************************************
-** Client is asking us to abort an exposure
-***************************************************************************************/
-bool GPhotoCCD::AbortExposure()
-{
-    InExposure = false;
-    return true;
-}
 /**************************************************************************************
 ** How much longer until exposure is done?
 ***************************************************************************************/

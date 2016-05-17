@@ -25,7 +25,6 @@ protected:
 
     // CCD specific functions
     bool StartExposure(float duration);
-    bool AbortExposure();
     void TimerHit();
 
 private:
