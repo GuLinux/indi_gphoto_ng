@@ -38,6 +38,7 @@ public:
     virtual void shoot(Seconds seconds);
     virtual ShootStatus shoot_status() const;
     virtual WriteImage write_image() const;
+    virtual void setup_properties(INDI::Properties::Properties< std::string >& properties);
 private:
   D_PTR;
 };

@@ -21,8 +21,10 @@
 #include "simulationcamera.h"
 #include <chrono>
 #include "logger.h"
+#include "c++/containers_streams.h"
 using namespace std;
 using namespace INDI::GPhoto;
+using namespace GuLinux;
 
 class SimulationCamera::Private {
 public:
@@ -113,5 +115,10 @@ INDI::GPhoto::Camera::WriteImage SimulationCamera::write_image() const
     d->exposure.valid = false;
     return true;
   };
+}
+
+
+void SimulationCamera::setup_properties(INDI::Properties::Properties< std::string >& properties)
+{
 }
 

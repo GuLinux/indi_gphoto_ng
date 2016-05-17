@@ -135,6 +135,7 @@ bool GPhotoCCD::updateProperties()
     if (isConnected()) {
         // Dummy values for now
         SetCCDParams(1280, 1024, 8, 5.4, 5.4);
+	camera->setup_properties(properties[Device]);
         properties[Device].add_switch("ISO", this, {getDeviceName(), "ISO", "ISO", "Image Settings"}, ISR_1OFMANY, [&](const vector<Switch::UpdateArgs> &states) {
 	  auto on_switch = make_stream(states).first(Switch::On);
 	  return on_switch && camera->set_iso(get<string>(*on_switch));
@@ -199,29 +200,6 @@ void GPhotoCCD::TimerHit()
     return;
 }
 
-/**************************************************************************************
-** Create a random image and return it to client
-***************************************************************************************
-void GPhotoCCD::grabImage()
-{
-    // Let's get a pointer to the frame buffer
-    uint8_t * image = PrimaryCCD.getFrameBuffer();
-
-    // Get width and height
-    int width = PrimaryCCD.getSubW() / PrimaryCCD.getBinX() * PrimaryCCD.getBPP()/8;
-    int height = PrimaryCCD.getSubH() / PrimaryCCD.getBinY();
-
-    // Fill buffer with random pattern
-    for (int i=0; i < height ; i++)
-        for (int j=0; j < width; j++)
-            image[i*width+j] = rand() % 255;
-
-    IDMessage(getDeviceName(), "Download complete.");
-
-    // Let INDI::CCD know we're done filling the image buffer
-    ExposureComplete(&PrimaryCCD);
-}
-*/
 
 bool GPhotoCCD::ISNewSwitch(const char* dev, const char* name, ISState* states, char* names[], int n)
 {

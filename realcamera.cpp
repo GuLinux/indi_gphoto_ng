@@ -96,3 +96,6 @@ INDI::GPhoto::Camera::WriteImage RealCamera::write_image() const
 }
 
 
+void RealCamera::setup_properties(INDI::Properties::Properties< std::string >& properties)
+{
+}

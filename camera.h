@@ -24,6 +24,7 @@
 #include <ratio>
 #include <functional>
 #include <indiccd.h>
+#include <indi_properties.h>
 
 namespace INDI {
 namespace GPhoto {
@@ -45,6 +46,7 @@ public:
   virtual void shoot(Seconds seconds) = 0;
   virtual ShootStatus shoot_status() const = 0;
   virtual WriteImage write_image() const = 0;
+  virtual void setup_properties(INDI::Properties::Properties< std::string > &properties) = 0;
 };
 }
 }
