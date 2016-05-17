@@ -208,3 +208,9 @@ bool GPhotoCCD::ISNewSwitch(const char* dev, const char* name, ISState* states, 
     return INDI::CCD::ISNewSwitch(dev, name, states, names, n);
 }
 
+bool GPhotoCCD::saveConfigItems(FILE* fp)
+{
+  properties.save_config(fp);
+  INDI::CCD::saveConfigItems(fp);
+  return true;
+}

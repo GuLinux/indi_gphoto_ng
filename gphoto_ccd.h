@@ -26,6 +26,7 @@ protected:
     // CCD specific functions
     bool StartExposure(float duration);
     void TimerHit();
+    virtual bool saveConfigItems(FILE* fp);
 
 private:
     enum PropertiesType { Persistent, Device };
