@@ -34,8 +34,9 @@ public:
   Logger(DefaultDevice *device, const std::string &module = {}) : device{device}, module{module} {}
   class Log {
   public:
+    Log() = delete;
+    Log(const Log &) = delete;
     template<typename T> Log &operator<<(const T &t) { message << t; return *this; }
-//     Log(Log &other) : device_name{other.device_name}, level{other.level}, message{other.message.str()} { other.to_log = false; }
     Log(Log &&other) : device_name{std::move(other.device_name)}, level{std::move(other.level)}, message{std::move(other.message)} { other.to_log = false; }
     ~Log() {
       if(to_log)
@@ -43,8 +44,8 @@ public:
     }
   private:
     friend class Logger;
-    Log(const std::string &device_name, INDI::Logger::VerbosityLevel level, const std::string &module = {}) 
-      : device_name{device_name}, level{level}, message{ module.empty() ? "" : module + " - " } {}
+    Log(const std::string &device_name, INDI::Logger::VerbosityLevel level, const std::string &prefix) 
+      : device_name{device_name}, level{level} { message << prefix; }
     std::string device_name;
     INDI::Logger::VerbosityLevel level;
     std::stringstream message;
@@ -60,7 +61,7 @@ public:
   Log extra3() const { return  mkLogger(INDI::Logger::DBG_EXTRA_3); }
   Log extra4() const { return  mkLogger(INDI::Logger::DBG_EXTRA_4); }
 private:
-  Log mkLogger(const INDI::Logger::VerbosityLevel level) const {  return Log{device->getDeviceName(), INDI::Logger::DBG_DEBUG}; }
+  Log mkLogger(const INDI::Logger::VerbosityLevel level) const {  return Log{device->getDeviceName(), INDI::Logger::DBG_DEBUG, module.empty() ? "" : module + " - "}; }
   DefaultDevice *device;
   std::string module;
 };

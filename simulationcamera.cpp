@@ -77,7 +77,7 @@ bool SimulationCamera::set_iso(const string& iso)
 
 void SimulationCamera::shoot(Camera::Seconds seconds)
 {
-  d->log.debug() << "Shooting for " << seconds.count() << ")";
+  d->log.debug() << "Shooting for " << seconds.count() << " seconds.";
   d->exposure = {seconds};
   // TODO
 }
@@ -95,20 +95,22 @@ INDI::GPhoto::Camera::WriteImage SimulationCamera::write_image() const
 {
   return [&](CCDChip &chip){
     d->log.debug() << "Writing image to chip";
-    uint8_t * image = chip.getFrameBuffer();
-
     // Get width and height
     int width = chip.getSubW() / chip.getBinX() * chip.getBPP()/8;
     int height = chip.getSubH() / chip.getBinY();
     d->log.debug() << "w=" << width << ", h=" << height;
+    chip.setFrameBufferSize(width*height);
+    uint8_t * image = chip.getFrameBuffer();
 
     // Fill buffer with random pattern
     for (int i=0; i < height ; i++) {
-	d->log.debug() << "Row: " << i;
+	if(i%10 == 0)
+	  d->log.debug() << "Row " << i;
         for (int j=0; j < width; j++)
             image[i*width+j] = rand() % 255;
     }
     d->log.debug() << "Finished generating random image";
+    d->exposure.valid = false;
     return true;
   };
 }
