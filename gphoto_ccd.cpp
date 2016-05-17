@@ -186,8 +186,14 @@ void GPhotoCCD::TimerHit()
             IDMessage(getDeviceName(), "Exposure done, downloading image...");
             // Set exposure left to zero
             PrimaryCCD.setExposureLeft(0);
-            /* grab and save image */
-            grabImage();
+	    if(camera->write_image()(PrimaryCCD)) {
+	      IDMessage(getDeviceName(), "Download complete.");
+	      ExposureComplete(&PrimaryCCD);
+	    }
+	    else {
+	      DEBUG(INDI::Logger::DBG_ERROR, "Image download failed.");
+	      PrimaryCCD.setExposureFailed();
+	    }
     }
     SetTimer(POLLMS);
     return;
@@ -195,7 +201,7 @@ void GPhotoCCD::TimerHit()
 
 /**************************************************************************************
 ** Create a random image and return it to client
-***************************************************************************************/
+***************************************************************************************
 void GPhotoCCD::grabImage()
 {
     // Let's get a pointer to the frame buffer
@@ -215,6 +221,7 @@ void GPhotoCCD::grabImage()
     // Let INDI::CCD know we're done filling the image buffer
     ExposureComplete(&PrimaryCCD);
 }
+*/
 
 bool GPhotoCCD::ISNewSwitch(const char* dev, const char* name, ISState* states, char* names[], int n)
 {

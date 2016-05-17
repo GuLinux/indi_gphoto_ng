@@ -71,4 +71,21 @@ Camera::ShootStatus SimulationCamera::shoot_status() const
   return {};
 }
 
+INDI::GPhoto::Camera::WriteImage SimulationCamera::write_image() const
+{
+  // TODO
+  return [](CCDChip &chip){
+    uint8_t * image = chip.getFrameBuffer();
+
+    // Get width and height
+    int width = chip.getSubW() / chip.getBinX() * chip.getBPP()/8;
+    int height = chip.getSubH() / chip.getBinY();
+
+    // Fill buffer with random pattern
+    for (int i=0; i < height ; i++)
+        for (int j=0; j < width; j++)
+            image[i*width+j] = rand() % 255;
+    return true;
+  };
+}
 

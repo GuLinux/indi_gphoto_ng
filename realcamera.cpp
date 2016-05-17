@@ -89,4 +89,10 @@ INDI::GPhoto::Camera::ShootStatus RealCamera::shoot_status() const
   return {};
 }
 
+INDI::GPhoto::Camera::WriteImage RealCamera::write_image() const
+{
+  // TODO
+  return {};
+}
+
 

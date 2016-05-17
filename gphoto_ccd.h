@@ -33,7 +33,6 @@ private:
     Camera::ptr camera;
     
     // Utility functions
-    void  grabImage();
 
     int   timerID;
 

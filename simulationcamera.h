@@ -36,6 +36,7 @@ public:
     
     virtual void shoot(Seconds seconds);
     virtual ShootStatus shoot_status() const;
+    virtual WriteImage write_image() const;
 private:
   D_PTR;
 };
