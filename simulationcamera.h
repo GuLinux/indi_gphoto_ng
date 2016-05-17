@@ -28,7 +28,7 @@ namespace GPhoto {
 class SimulationCamera : public INDI::GPhoto::Camera
 {
 public:
-    SimulationCamera();
+    SimulationCamera(INDI::CCD *device);
     ~SimulationCamera();
     virtual std::vector< std::string > available_iso();
     virtual std::string current_iso();

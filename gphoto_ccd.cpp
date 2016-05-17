@@ -63,7 +63,7 @@ bool GPhotoCCD::Connect()
 {
     DEBUG(INDI::Logger::DBG_DEBUG, __PRETTY_FUNCTION__);
     try {
-        camera =  isSimulation() ? Camera::ptr{new SimulationCamera} : Camera::ptr{new RealCamera{this}};
+        camera =  isSimulation() ? Camera::ptr{new SimulationCamera{this}} : Camera::ptr{new RealCamera{this}};
     } catch(std::exception &e) {
         DEBUG(INDI::Logger::DBG_ERROR, e.what());
         return false;

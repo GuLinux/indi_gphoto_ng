@@ -19,24 +19,39 @@
  */
 
 #include "simulationcamera.h"
+#include <chrono>
+#include "logger.h"
 using namespace std;
 using namespace INDI::GPhoto;
 
 class SimulationCamera::Private {
 public:
-  Private(SimulationCamera *q);
+  Private(INDI::CCD *device, SimulationCamera *q);
+  INDI::CCD *device;
   vector<string> avail_iso;
   string current_iso;
+  struct Exposure {
+    Exposure(Seconds seconds) : seconds{seconds}, started{chrono::steady_clock::now()} {}
+    Exposure() : valid{false} {}
+    Seconds seconds;
+    chrono::steady_clock::time_point started;
+    bool valid = true;
+    Seconds elapsed() const { return chrono::steady_clock::now() - started; }
+    bool finished() const { return elapsed() >= seconds; }
+  };
+  Exposure exposure;
+  Logger log;
 private:
   SimulationCamera *q;
 };
 
-SimulationCamera::Private::Private(SimulationCamera* q) : avail_iso{"100", "200", "400", "800"}, current_iso{"200"}, q{q}
+SimulationCamera::Private::Private(INDI::CCD* device, SimulationCamera* q)
+  : device{device}, avail_iso{"100", "200", "400", "800"}, current_iso{"200"}, log{device, "SimulationCamera"}, q{q}
 {
 }
 
 
-SimulationCamera::SimulationCamera() : dptr(this)
+SimulationCamera::SimulationCamera(INDI::CCD* device) : dptr(device, this)
 {
 }
 
@@ -62,29 +77,38 @@ bool SimulationCamera::set_iso(const string& iso)
 
 void SimulationCamera::shoot(Camera::Seconds seconds)
 {
+  d->log.debug() << "Shooting for " << seconds.count() << ")";
+  d->exposure = {seconds};
   // TODO
 }
 
 Camera::ShootStatus SimulationCamera::shoot_status() const
 {
-  // TODO
-  return {};
+  if(!d->exposure.valid)
+    return {ShootStatus::Idle};
+  if(d->exposure.finished())
+    return {ShootStatus::Finished, d->exposure.elapsed(), Seconds{0}};
+  return {ShootStatus::Running, d->exposure.elapsed(), d->exposure.seconds - d->exposure.elapsed()};
 }
 
 INDI::GPhoto::Camera::WriteImage SimulationCamera::write_image() const
 {
-  // TODO
-  return [](CCDChip &chip){
+  return [&](CCDChip &chip){
+    d->log.debug() << "Writing image to chip";
     uint8_t * image = chip.getFrameBuffer();
 
     // Get width and height
     int width = chip.getSubW() / chip.getBinX() * chip.getBPP()/8;
     int height = chip.getSubH() / chip.getBinY();
+    d->log.debug() << "w=" << width << ", h=" << height;
 
     // Fill buffer with random pattern
-    for (int i=0; i < height ; i++)
+    for (int i=0; i < height ; i++) {
+	d->log.debug() << "Row: " << i;
         for (int j=0; j < width; j++)
             image[i*width+j] = rand() % 255;
+    }
+    d->log.debug() << "Finished generating random image";
     return true;
   };
 }
