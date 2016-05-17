@@ -143,8 +143,8 @@ bool GPhotoCCD::updateProperties()
 
         for(auto iso: camera->available_iso() )
             properties[Device].switch_p("ISO").add(iso, iso, iso==camera->current_iso() ? ISS_ON : ISS_OFF);
-        properties[Device].switch_p("ISO")->do_register();
         // Start the timer
+	properties[Device].register_unregistered_properties();
         SetTimer(POLLMS);
     } else {
         properties.clear(GPhotoCCD::Device);
