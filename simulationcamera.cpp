@@ -60,3 +60,15 @@ bool SimulationCamera::set_iso(const string& iso)
   return true;
 }
 
+void SimulationCamera::shoot(Camera::Seconds seconds)
+{
+  // TODO
+}
+
+Camera::ShootStatus SimulationCamera::shoot_status() const
+{
+  // TODO
+  return {};
+}
+
+

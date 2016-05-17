@@ -33,16 +33,8 @@ private:
     Camera::ptr camera;
     
     // Utility functions
-    float CalcTimeLeft();
     void  grabImage();
 
-    // Are we exposing?
-    bool InExposure;
-    // Struct to keep timing
-    struct timeval ExpStart;
-
-    float ExposureRequest;
-    float TemperatureRequest;
     int   timerID;
 
 };

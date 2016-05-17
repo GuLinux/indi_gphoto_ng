@@ -54,7 +54,6 @@ void ISSnoopDevice (XMLEle *root)
 
 GPhotoCCD::GPhotoCCD()
 {
-    InExposure = false;
 }
 
 /**************************************************************************************
@@ -161,34 +160,15 @@ bool GPhotoCCD::updateProperties()
 ***************************************************************************************/
 bool GPhotoCCD::StartExposure(float duration)
 {
-    ExposureRequest=duration;
-
+    if(camera->shoot_status().status != Camera::ShootStatus::Idle)
+      return false;
+    camera->shoot(Camera::Seconds{duration});
     // Since we have only have one CCD with one chip, we set the exposure duration of the primary CCD
     PrimaryCCD.setExposureDuration(duration);
 
-    gettimeofday(&ExpStart,NULL);
-
-    InExposure=true;
 
     // We're done
     return true;
-}
-
-/**************************************************************************************
-** How much longer until exposure is done?
-***************************************************************************************/
-float GPhotoCCD::CalcTimeLeft()
-{
-    double timesince;
-    double timeleft;
-    struct timeval now;
-    gettimeofday(&now,NULL);
-
-    timesince=(double)(now.tv_sec * 1000.0 + now.tv_usec/1000) - (double)(ExpStart.tv_sec * 1000.0 + ExpStart.tv_usec/1000);
-    timesince=timesince/1000;
-
-    timeleft=ExposureRequest-timesince;
-    return timeleft;
 }
 
 /**************************************************************************************
@@ -196,38 +176,19 @@ float GPhotoCCD::CalcTimeLeft()
 ***************************************************************************************/
 void GPhotoCCD::TimerHit()
 {
-    long timeleft;
-
     if(isConnected() == false)
         return;  //  No need to reset timer if we are not connected anymore
 
-    if (InExposure)
-    {
-        timeleft=CalcTimeLeft();
-
-        // Less than a 0.1 second away from exposure completion
-        // This is an over simplified timing method, check CCDSimulator and simpleCCD for better timing checks
-        if(timeleft < 0.1)
-        {
-            /* We're done exposing */
+    auto shoot_status = camera->shoot_status();
+    if (shoot_status.status == Camera::ShootStatus::Idle)
+      PrimaryCCD.setExposureLeft(camera->shoot_status().remaining.count());
+    if (shoot_status.status == Camera::ShootStatus::Finished) {
             IDMessage(getDeviceName(), "Exposure done, downloading image...");
-
             // Set exposure left to zero
             PrimaryCCD.setExposureLeft(0);
-
-            // We're no longer exposing...
-            InExposure = false;
-
             /* grab and save image */
             grabImage();
-
-        }
-        else
-            // Just update time left in client
-            PrimaryCCD.setExposureLeft(timeleft);
-
     }
-
     SetTimer(POLLMS);
     return;
 }

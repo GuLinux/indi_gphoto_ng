@@ -20,15 +20,28 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <chrono>
+#include <ratio>
 
 namespace INDI {
 namespace GPhoto {
 class Camera {
 public:
+  typedef std::chrono::duration<double> Seconds;
   typedef std::shared_ptr<Camera> ptr;
   virtual std::vector<std::string> available_iso() = 0;
   virtual std::string current_iso() = 0;
   virtual bool set_iso(const std::string &iso) = 0;
+  
+  struct ShootStatus {
+    enum Status { Idle, Running, Finished };
+    Status status;
+    Seconds elapsed;
+    Seconds remaining;
+  };
+  virtual void shoot(Seconds seconds) = 0;
+  virtual ShootStatus shoot_status() const = 0;
+  
 };
 }
 }

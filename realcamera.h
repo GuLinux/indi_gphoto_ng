@@ -33,7 +33,10 @@ public:
     ~RealCamera();
     virtual std::vector< std::string > available_iso();
     virtual std::string current_iso();
-    bool set_iso(const std::__cxx11::string& iso);
+    bool set_iso(const std::string& iso);
+    
+    virtual void shoot(Seconds seconds);
+    virtual ShootStatus shoot_status() const;
 private:
   D_PTR;
 };

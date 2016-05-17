@@ -78,3 +78,15 @@ bool RealCamera::set_iso(const string& iso)
   return current_iso() == iso;
 }
 
+void RealCamera::shoot(INDI::GPhoto::Camera::Seconds seconds)
+{
+  // TODO
+}
+
+INDI::GPhoto::Camera::ShootStatus RealCamera::shoot_status() const
+{
+  // TODO
+  return {};
+}
+
+
