@@ -203,10 +203,24 @@ void GPhotoCCD::TimerHit()
 
 bool GPhotoCCD::ISNewSwitch(const char* dev, const char* name, ISState* states, char* names[], int n)
 {
-    if(properties.update(dev, name, states, names, n))
-      return true;
-    return INDI::CCD::ISNewSwitch(dev, name, states, names, n);
+    return properties.update(dev, name, states, names, n) || INDI::CCD::ISNewSwitch(dev, name, states, names, n);
 }
+
+bool GPhotoCCD::ISNewBLOB(const char* dev, const char* name, int sizes[], int blobsizes[], char* blobs[], char* formats[], char* names[], int n)
+{
+    return properties.update(dev, name, sizes, blobsizes, blobs, formats, names, n) || INDI::DefaultDevice::ISNewBLOB(dev, name, sizes, blobsizes, blobs, formats, names, n);
+}
+
+bool GPhotoCCD::ISNewNumber(const char* dev, const char* name, double values[], char* names[], int n)
+{
+    return properties.update(dev, name, values, names, n) || INDI::CCD::ISNewNumber(dev, name, values, names, n);
+}
+
+bool GPhotoCCD::ISNewText(const char* dev, const char* name, char* texts[], char* names[], int n)
+{
+    return properties.update(dev, name, const_cast<const char**>(texts), names, n) || INDI::CCD::ISNewText(dev, name, texts, names, n);
+}
+
 
 bool GPhotoCCD::saveConfigItems(FILE* fp)
 {
