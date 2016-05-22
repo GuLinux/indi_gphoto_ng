@@ -94,11 +94,11 @@ bool SimulationCamera::set_format(const string& format)
   d->current_format = format; return true;
 }
 
-void SimulationCamera::shoot(Camera::Seconds seconds)
+bool SimulationCamera::shoot(Camera::Seconds seconds)
 {
   d->log.debug() << "Shooting for " << seconds.count() << " seconds.";
   d->exposure = {seconds};
-  // TODO
+  return true;
 }
 
 Camera::ShootStatus SimulationCamera::shoot_status() const

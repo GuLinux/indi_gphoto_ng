@@ -46,7 +46,7 @@ public:
     Seconds elapsed;
     Seconds remaining;
   };
-  virtual void shoot(Seconds seconds) = 0;
+  virtual bool shoot(Seconds seconds) = 0;
   virtual ShootStatus shoot_status() const = 0;
   virtual WriteImage write_image() const = 0;
   virtual void setup_properties(INDI::Properties::Properties< std::string > &properties) = 0;

@@ -39,7 +39,7 @@ public:
     GPhotoCPP::CameraPtr camera;
     GPhotoCPP::Camera::ShotPtr current_shoot;
     Seconds mirror_lock = Seconds{0};
-
+    list<string> used_widget_names;
     template<typename T> shared_ptr<T> widget_value(const string &name);
 private:
     RealCamera *q;
@@ -65,6 +65,10 @@ RealCamera::Private::Private(INDI::CCD* device, RealCamera* q)
     camera =  driver->autodetect();
     if(! camera)
         throw std::runtime_error("Unable to find camera");
+    used_widget_names = make_stream(list<GPhotoCPP::WidgetPtr>{camera->settings().iso_widget(), camera->settings().format_widget()})
+	.filter([](const GPhotoCPP::WidgetPtr &w) -> bool { return w.operator bool(); })
+	.transform<list<string>>([](const GPhotoCPP::WidgetPtr &w){ return w->name(); })
+	.get();
 }
 
 
@@ -74,7 +78,6 @@ RealCamera::RealCamera(INDI::CCD* device) : dptr(device, this)
 
 RealCamera::~RealCamera()
 {
-  d->log.debug() << "Camera refcount: " << d->camera.use_count();
 }
 
 vector< string > RealCamera::available_iso()
@@ -108,19 +111,23 @@ bool RealCamera::set_format(const string& format)
 {
     d->camera->settings().set_format(format);
     d->camera->save_settings();
-    auto reloaded = current_format();
-    d->log.debug() << "setting new format to " << format << ": " << reloaded;
-    return reloaded == format;
+    return current_format() == format;
 }
 
 
 
 
-void RealCamera::shoot(INDI::GPhoto::Camera::Seconds seconds)
+bool RealCamera::shoot(INDI::GPhoto::Camera::Seconds seconds)
 {
+    if(current_format().find('+') != string::npos) {
+      d->log.error() << "Error! current format " << current_format() << 
+	" is not supported. Please select only a single format (RAW or JPEG), not composite formats (RAW+JPEG)";
+      return false;
+    }
     bool mirror_lock_enabled = d->mirror_lock > Seconds{0};
     d->log.debug() << "mirrorlock secs: " << d->mirror_lock.count() << ", enabled: " << mirror_lock_enabled;
     d->current_shoot = d->camera->control().shoot(seconds, mirror_lock_enabled, d->mirror_lock);
+    return d->current_shoot.operator bool();
 }
 
 INDI::GPhoto::Camera::ShootStatus RealCamera::shoot_status() const
@@ -245,9 +252,7 @@ void RealCamera::setup_properties(::Properties< std::string >& properties)
     auto iso_widget = d->camera->settings().iso_widget();
     auto widgets = make_stream(d->camera->widgets_settings()->all_children())
     .filter([&](WidgetPtr w) {
-        return supported_types[w->type()]
-	  && (! format_widget || format_widget->name() != w->name())
-	  && (! iso_widget || iso_widget->name() != w->name());
+        return supported_types[w->type()] && ! make_stream(d->used_widget_names).contains(w->name());
     })
     .for_each([&](WidgetPtr w) {
         supported_types[w->type()](w);

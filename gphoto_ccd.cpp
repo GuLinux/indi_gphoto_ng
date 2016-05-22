@@ -169,9 +169,8 @@ bool GPhotoCCD::updateProperties()
 ***************************************************************************************/
 bool GPhotoCCD::StartExposure(float duration)
 {
-    if(camera->shoot_status().status != Camera::ShootStatus::Idle)
+    if(camera->shoot_status().status != Camera::ShootStatus::Idle || ! camera->shoot(Camera::Seconds{duration}))
       return false;
-    camera->shoot(Camera::Seconds{duration});
     // Since we have only have one CCD with one chip, we set the exposure duration of the primary CCD
     PrimaryCCD.setExposureDuration(duration);
 
