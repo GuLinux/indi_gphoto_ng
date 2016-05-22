@@ -39,6 +39,7 @@ public:
     GPhotoCPP::CameraPtr camera;
     GPhotoCPP::Camera::ShotPtr current_shoot;
 
+    template<typename T> shared_ptr<T> widget_value(const string &name);
 private:
     RealCamera *q;
 };
@@ -143,46 +144,55 @@ INDI::GPhoto::Camera::WriteImage RealCamera::write_image() const
     };
 }
 
+template<typename T> shared_ptr<T> RealCamera::Private::widget_value(const string& name)
+{
+  return camera->widgets_settings()->child_by_name(name)->get<T>();
+}
+
+
 void RealCamera::setup_properties(::Properties< std::string >& properties)
 {
     typedef GPhotoCPP::Widget Widget;
     typedef const GPhotoCPP::WidgetPtr& WidgetPtr;
-    auto make_identity = [&](WidgetPtr w) {
+    auto make_identity = [this](WidgetPtr w) {
         return Identity {d->device->getDeviceName(), w->name(), w->label(), w->parent()->label(), w->access() == GPhotoCPP::Widget::ReadOnly ? IP_RO : IP_RW};
     };
     unordered_map<GPhotoCPP::Widget::Type, function<void(WidgetPtr)>> supported_types {
         {   Widget::String, [&](WidgetPtr w) {
-                auto widget_value = w->get<Widget::StringValue>();
-                properties.add_text(w->name(), d->device, make_identity(w), [&](const vector<Text::UpdateArgs> &u) {
+		auto wv = [=] { return d->widget_value<Widget::StringValue>(w->name()); };
+                auto widget_value = wv();
+                properties.add_text(w->name(), d->device, make_identity(w), [=](const vector<Text::UpdateArgs> &u) {
                     string value = get<0>(u[0]);
-                    widget_value->set(value);
+                    wv()->set(value);
                     d->camera->save_settings();
-                    return widget_value->refresh().get() == value;;
+                    return wv()->get() == value;
                 })
                 .add(w->name(), w->label(), widget_value->get().c_str());
             }
         },
         {   Widget::Range, [&](WidgetPtr w) {
-                auto widget_value = w->get<Widget::RangeValue>();
-                properties.add_number(w->name(), d->device, make_identity(w), [&](const vector<Number::UpdateArgs> &u) {
+		auto wv = [=] { return d->widget_value<Widget::RangeValue>(w->name()); };
+		auto widget_value = wv();
+                properties.add_number(w->name(), d->device, make_identity(w), [=](const vector<Number::UpdateArgs> &u) {
                     auto value= get<0>(u[0]);
-                    widget_value->set(value);
+                    wv()->set(value);
                     d->camera->save_settings();
-                    return widget_value->refresh().get() == value;;
+                    return wv()->get() == value;
                 })
                 .add(w->name(), w->label(), widget_value->range().min, widget_value->range().max, widget_value->range().increment, widget_value->get());
             }
         },
-        {   Widget::Toggle, [&](WidgetPtr w) {
-                auto widget_value = w->get<Widget::ToggleValue>();
-                properties.add_switch(w->name(), d->device, make_identity(w), ISR_1OFMANY, [&](const vector<Switch::UpdateArgs> &u) {
-                    bool is_on = get<0>(u[0]);
-                    widget_value->set(is_on);
+        {   Widget::Toggle, [this, &properties, make_identity](WidgetPtr w) {
+		auto wv = [=] { return d->widget_value<Widget::ToggleValue>(w->name()); };
+		bool is_on = wv()->get();
+                properties.add_switch(w->name(), d->device, make_identity(w), ISR_1OFMANY, [=](const vector<Switch::UpdateArgs> &u) {
+                    bool is_on = get<1>(u[0]) == "on";
+		    wv()->set(is_on);
                     d->camera->save_settings();
-                    return widget_value->refresh().get() == is_on;
+                    return wv()->get() == is_on;
                 })
-                .add("on", "On", widget_value->get() ? ISS_ON : ISS_OFF)
-                .add("off", "Off", widget_value->get() ? ISS_ON : ISS_OFF);
+                .add("on", "On", is_on ? ISS_ON : ISS_OFF)
+                .add("off", "Off", is_on ? ISS_OFF : ISS_ON);
             }
         },
         { Widget::Button, {} },
@@ -190,12 +200,13 @@ void RealCamera::setup_properties(::Properties< std::string >& properties)
         { Widget::Window, {} },
         { Widget::Section, {} },
         {   Widget::Menu, [&](WidgetPtr w) {
-                auto widget_value = w->get<Widget::MenuValue>();
-                auto sw = properties.add_switch(w->name(), d->device, make_identity(w), ISR_1OFMANY, [&](const vector<Switch::UpdateArgs> &u) {
+		auto wv = [=] { return d->widget_value<Widget::MenuValue>(w->name()); };
+                auto widget_value = wv();
+                auto sw = properties.add_switch(w->name(), d->device, make_identity(w), ISR_1OFMANY, [=](const vector<Switch::UpdateArgs> &u) {
                     auto current_text = get<1>(*make_stream(u).first(Switch::On));
-                    widget_value->set(current_text);
+                    wv()->set(current_text);
                     d->camera->save_settings();
-                    return widget_value->refresh().get() == current_text;
+                    return wv()->get() == current_text;
                 });
 		auto current_choice = widget_value->get();
 		for(auto choice: widget_value->choices()) {
