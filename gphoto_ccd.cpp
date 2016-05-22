@@ -52,7 +52,7 @@ void ISSnoopDevice (XMLEle *root)
     simpleCCD->ISSnoopDevice(root);
 }
 
-GPhotoCCD::GPhotoCCD() : log{this, "GPhotoCCD"}
+GPhotoCCD::GPhotoCCD() : log {this, "GPhotoCCD"}
 {
 }
 
@@ -63,9 +63,10 @@ bool GPhotoCCD::Connect()
 {
     DEBUG(INDI::Logger::DBG_DEBUG, __PRETTY_FUNCTION__);
     try {
-        camera =  isSimulation() ? Camera::ptr{new SimulationCamera{this}} : Camera::ptr{new RealCamera{this}};
+camera =  isSimulation() ? Camera::ptr {new SimulationCamera{this}} :
+        Camera::ptr {new RealCamera{this}};
     } catch(std::exception &e) {
-        DEBUG(INDI::Logger::DBG_ERROR, e.what());
+        log.error() << e.what();
         return false;
     }
     IDMessage(getDeviceName(), "Simple CCD connected successfully!");
@@ -135,24 +136,29 @@ bool GPhotoCCD::updateProperties()
     if (isConnected()) {
         // Dummy values for now
         SetCCDParams(1280, 1024, 8, 5.4, 5.4);
-	camera->setup_properties(properties[Device]);
-        properties[Device].add_switch("ISO", this, {getDeviceName(), "ISO", "ISO", "Image Settings"}, ISR_1OFMANY, [&](const vector<Switch::UpdateArgs> &states) {
-	  auto on_switch = make_stream(states).first(Switch::On);
-	  return on_switch && camera->set_iso(get<string>(*on_switch));
-        });
+        try {
+            camera->setup_properties(properties[Device]);
+            properties[Device].add_switch("ISO", this, {getDeviceName(), "ISO", "ISO", "Image Settings"}, ISR_1OFMANY, [&](const vector<Switch::UpdateArgs> &states) {
+                auto on_switch = make_stream(states).first(Switch::On);
+                return on_switch && camera->set_iso(get<string>(*on_switch));
+            });
 
-        for(auto iso: camera->available_iso() )
-            properties[Device].switch_p("ISO").add(iso, iso, iso==camera->current_iso() ? ISS_ON : ISS_OFF);
-	
-        properties[Device].add_switch("FORMAT", this, {getDeviceName(), "FORMAT", "FORMAT", "Image Settings"}, ISR_1OFMANY, [&](const vector<Switch::UpdateArgs> &states) {
-	  auto on_switch = make_stream(states).first(Switch::On);
-	  return on_switch && camera->set_format(get<string>(*on_switch));
-        });
+            for(auto iso: camera->available_iso() )
+                properties[Device].switch_p("ISO").add(iso, iso, iso==camera->current_iso() ? ISS_ON : ISS_OFF);
 
-        for(auto iso: camera->available_formats() )
-            properties[Device].switch_p("FORMAT").add(iso, iso, iso==camera->current_format() ? ISS_ON : ISS_OFF);
-        // Start the timer
-	properties[Device].register_unregistered_properties();
+            properties[Device].add_switch("FORMAT", this, {getDeviceName(), "FORMAT", "FORMAT", "Image Settings"}, ISR_1OFMANY, [&](const vector<Switch::UpdateArgs> &states) {
+                auto on_switch = make_stream(states).first(Switch::On);
+                return on_switch && camera->set_format(get<string>(*on_switch));
+            });
+
+            for(auto iso: camera->available_formats() )
+                properties[Device].switch_p("FORMAT").add(iso, iso, iso==camera->current_format() ? ISS_ON : ISS_OFF);
+            // Start the timer
+            properties[Device].register_unregistered_properties();
+        } catch(std::exception &e) {
+            log.error() << e.what();
+            return false;
+        }
         SetTimer(POLLMS);
     } else {
         properties.clear(GPhotoCCD::Device);
@@ -169,11 +175,15 @@ bool GPhotoCCD::updateProperties()
 ***************************************************************************************/
 bool GPhotoCCD::StartExposure(float duration)
 {
-    if(camera->shoot_status().status != Camera::ShootStatus::Idle || ! camera->shoot(Camera::Seconds{duration}))
-      return false;
-    // Since we have only have one CCD with one chip, we set the exposure duration of the primary CCD
-    PrimaryCCD.setExposureDuration(duration);
-
+    try {
+        if(camera->shoot_status().status != Camera::ShootStatus::Idle || ! camera->shoot(Camera::Seconds {duration}))
+            return false;
+        // Since we have only have one CCD with one chip, we set the exposure duration of the primary CCD
+        PrimaryCCD.setExposureDuration(duration);
+    } catch(std::exception &e) {
+        log.error() << e.what();
+        return false;
+    }
 
     // We're done
     return true;
@@ -189,19 +199,19 @@ void GPhotoCCD::TimerHit()
 
     auto shoot_status = camera->shoot_status();
     if (shoot_status.status == Camera::ShootStatus::Idle)
-      PrimaryCCD.setExposureLeft(camera->shoot_status().remaining.count());
+        PrimaryCCD.setExposureLeft(camera->shoot_status().remaining.count());
     if (shoot_status.status == Camera::ShootStatus::Finished) {
-            IDMessage(getDeviceName(), "Exposure done, downloading image...");
-            // Set exposure left to zero
-            PrimaryCCD.setExposureLeft(0);
-	    if(camera->write_image()(PrimaryCCD)) {
-	      IDMessage(getDeviceName(), "Download complete.");
-	      ExposureComplete(&PrimaryCCD);
-	    }
-	    else {
-	      DEBUG(INDI::Logger::DBG_ERROR, "Image download failed.");
-	      PrimaryCCD.setExposureFailed();
-	    }
+        IDMessage(getDeviceName(), "Exposure done, downloading image...");
+        // Set exposure left to zero
+        PrimaryCCD.setExposureLeft(0);
+        if(camera->write_image()(PrimaryCCD)) {
+            IDMessage(getDeviceName(), "Download complete.");
+            ExposureComplete(&PrimaryCCD);
+        }
+        else {
+            DEBUG(INDI::Logger::DBG_ERROR, "Image download failed.");
+            PrimaryCCD.setExposureFailed();
+        }
     }
     SetTimer(POLLMS);
     return;
@@ -210,28 +220,48 @@ void GPhotoCCD::TimerHit()
 
 bool GPhotoCCD::ISNewSwitch(const char* dev, const char* name, ISState* states, char* names[], int n)
 {
-    return properties.update(dev, name, states, names, n) || INDI::CCD::ISNewSwitch(dev, name, states, names, n);
+    try {
+        return properties.update(dev, name, states, names, n) || INDI::CCD::ISNewSwitch(dev, name, states, names, n);
+    } catch(std::exception &e) {
+        log.error() << e.what();
+        return false;
+    }
 }
 
 bool GPhotoCCD::ISNewBLOB(const char* dev, const char* name, int sizes[], int blobsizes[], char* blobs[], char* formats[], char* names[], int n)
 {
-    return properties.update(dev, name, sizes, blobsizes, blobs, formats, names, n) || INDI::DefaultDevice::ISNewBLOB(dev, name, sizes, blobsizes, blobs, formats, names, n);
+    try {
+        return properties.update(dev, name, sizes, blobsizes, blobs, formats, names, n) || INDI::DefaultDevice::ISNewBLOB(dev, name, sizes, blobsizes, blobs, formats, names, n);
+    } catch(std::exception &e) {
+        log.error() << e.what();
+        return false;
+    }
 }
 
 bool GPhotoCCD::ISNewNumber(const char* dev, const char* name, double values[], char* names[], int n)
 {
-    return properties.update(dev, name, values, names, n) || INDI::CCD::ISNewNumber(dev, name, values, names, n);
+    try {
+        return properties.update(dev, name, values, names, n) || INDI::CCD::ISNewNumber(dev, name, values, names, n);
+    } catch(std::exception &e) {
+        log.error() << e.what();
+        return false;
+    }
 }
 
 bool GPhotoCCD::ISNewText(const char* dev, const char* name, char* texts[], char* names[], int n)
 {
-    return properties.update(dev, name, const_cast<const char**>(texts), names, n) || INDI::CCD::ISNewText(dev, name, texts, names, n);
+    try {
+        return properties.update(dev, name, const_cast<const char**>(texts), names, n) || INDI::CCD::ISNewText(dev, name, texts, names, n);
+    } catch(std::exception &e) {
+        log.error() << e.what();
+        return false;
+    }
 }
 
 
 bool GPhotoCCD::saveConfigItems(FILE* fp)
 {
-  properties.save_config(fp);
-  INDI::CCD::saveConfigItems(fp);
-  return true;
+    properties.save_config(fp);
+    INDI::CCD::saveConfigItems(fp);
+    return true;
 }

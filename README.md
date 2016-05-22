@@ -18,7 +18,15 @@ Compilation
     cd indi_gphoto_ng
     mkdir build
     cd build
-    cmake ..
+    cmake .. -DCMAKE_INSTALL_PREFIX=/usr
     make all
 
 
+Running
+-------
+
+The driver itself must be launched by indiserver.
+If correctly installed, it will appear as "GPhoto NG CCD" in your indi client devices menu.
+For testing purpouses, you may launch it manually:
+
+    indiserver -v indi_gphoto_ng_ccd
