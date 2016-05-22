@@ -73,6 +73,7 @@ RealCamera::RealCamera(INDI::CCD* device) : dptr(device, this)
 
 RealCamera::~RealCamera()
 {
+  d->log.debug() << "Camera refcount: " << d->camera.use_count();
 }
 
 vector< string > RealCamera::available_iso()
@@ -182,7 +183,7 @@ void RealCamera::setup_properties(::Properties< std::string >& properties)
                 .add(w->name(), w->label(), widget_value->range().min, widget_value->range().max, widget_value->range().increment, widget_value->get());
             }
         },
-        {   Widget::Toggle, [this, &properties, make_identity](WidgetPtr w) {
+        {   Widget::Toggle, [&](WidgetPtr w) {
 		auto wv = [=] { return d->widget_value<Widget::ToggleValue>(w->name()); };
 		bool is_on = wv()->get();
                 properties.add_switch(w->name(), d->device, make_identity(w), ISR_1OFMANY, [=](const vector<Switch::UpdateArgs> &u) {
@@ -195,14 +196,10 @@ void RealCamera::setup_properties(::Properties< std::string >& properties)
                 .add("off", "Off", is_on ? ISS_OFF : ISS_ON);
             }
         },
-        { Widget::Button, {} },
-        { Widget::Date, {} },
-        { Widget::Window, {} },
-        { Widget::Section, {} },
         {   Widget::Menu, [&](WidgetPtr w) {
 		auto wv = [=] { return d->widget_value<Widget::MenuValue>(w->name()); };
                 auto widget_value = wv();
-                auto sw = properties.add_switch(w->name(), d->device, make_identity(w), ISR_1OFMANY, [=](const vector<Switch::UpdateArgs> &u) {
+                auto &sw = properties.add_switch(w->name(), d->device, make_identity(w), ISR_1OFMANY, [=](const vector<Switch::UpdateArgs> &u) {
                     auto current_text = get<1>(*make_stream(u).first(Switch::On));
                     wv()->set(current_text);
                     d->camera->save_settings();
@@ -214,6 +211,10 @@ void RealCamera::setup_properties(::Properties< std::string >& properties)
 		}
             }
         },
+        { Widget::Button, {} },
+        { Widget::Date, {} },
+        { Widget::Window, {} },
+        { Widget::Section, {} },
     };
     auto widgets = make_stream(d->camera->widgets_settings()->all_children())
     .filter([&](WidgetPtr w) {
@@ -221,6 +222,11 @@ void RealCamera::setup_properties(::Properties< std::string >& properties)
     })
     .for_each([&](WidgetPtr w) {
         supported_types[w->type()](w);
-    })
-                   ;
+    });
+    if(d->camera->settings().needs_serial_port()) {
+      properties.add_text("serial_port", d->device, {d->device->getDeviceName(), "trigger", "Trigger", "Main Control", IP_RW}, [=](const vector<Text::UpdateArgs> &u) {
+	d->camera->settings().set_serial_port(get<0>(u[0]));
+	return true;
+      }).add("serial_port_value", "Serial Port", "");
+    }
 }
