@@ -36,6 +36,9 @@ public:
   virtual std::vector<std::string> available_iso() = 0;
   virtual std::string current_iso() = 0;
   virtual bool set_iso(const std::string &iso) = 0;
+  virtual std::vector< std::string > available_formats() = 0;
+  virtual std::string current_format() = 0;
+  virtual bool set_format(const std::string& format) = 0;
   
   struct ShootStatus {
     enum Status { Idle, Running, Finished };

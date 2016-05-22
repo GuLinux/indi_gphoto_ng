@@ -33,6 +33,9 @@ public:
     virtual std::vector< std::string > available_iso();
     virtual std::string current_iso();
     virtual bool set_iso(const std::string &iso);
+    virtual std::vector< std::string > available_formats();
+    virtual std::string current_format();
+    virtual bool set_format(const std::string& format);
     
     virtual void shoot(Seconds seconds);
     virtual ShootStatus shoot_status() const;

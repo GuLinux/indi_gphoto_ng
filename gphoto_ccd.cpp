@@ -52,7 +52,7 @@ void ISSnoopDevice (XMLEle *root)
     simpleCCD->ISSnoopDevice(root);
 }
 
-GPhotoCCD::GPhotoCCD()
+GPhotoCCD::GPhotoCCD() : log{this, "GPhotoCCD"}
 {
 }
 
@@ -143,6 +143,14 @@ bool GPhotoCCD::updateProperties()
 
         for(auto iso: camera->available_iso() )
             properties[Device].switch_p("ISO").add(iso, iso, iso==camera->current_iso() ? ISS_ON : ISS_OFF);
+	
+        properties[Device].add_switch("FORMAT", this, {getDeviceName(), "FORMAT", "FORMAT", "Image Settings"}, ISR_1OFMANY, [&](const vector<Switch::UpdateArgs> &states) {
+	  auto on_switch = make_stream(states).first(Switch::On);
+	  return on_switch && camera->set_format(get<string>(*on_switch));
+        });
+
+        for(auto iso: camera->available_formats() )
+            properties[Device].switch_p("FORMAT").add(iso, iso, iso==camera->current_format() ? ISS_ON : ISS_OFF);
         // Start the timer
 	properties[Device].register_unregistered_properties();
         SetTimer(POLLMS);

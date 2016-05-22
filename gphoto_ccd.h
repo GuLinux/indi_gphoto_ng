@@ -4,6 +4,7 @@
 
 #include <indiccd.h>
 #include "indi_properties_map.h"
+#include <logger.h>
 #include "camera.h"
 
 namespace INDI {
@@ -34,7 +35,7 @@ private:
     enum PropertiesType { Persistent, Device };
     INDI::Properties::PropertiesMap<PropertiesType> properties;
     Camera::ptr camera;
-    
+    INDI::Utils::Logger log;
     // Utility functions
 
     int   timerID;

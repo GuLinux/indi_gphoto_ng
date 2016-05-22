@@ -32,6 +32,8 @@ public:
   INDI::CCD *device;
   vector<string> avail_iso;
   string current_iso;
+  vector<string> avail_formats;
+  string current_format;
   struct Exposure {
     Exposure(Seconds seconds) : seconds{seconds}, started{chrono::steady_clock::now()} {}
     Exposure() : valid{false} {}
@@ -42,13 +44,13 @@ public:
     bool finished() const { return elapsed() >= seconds; }
   };
   Exposure exposure;
-  Logger log;
+  INDI::Utils::Logger log;
 private:
   SimulationCamera *q;
 };
 
 SimulationCamera::Private::Private(INDI::CCD* device, SimulationCamera* q)
-  : device{device}, avail_iso{"100", "200", "400", "800"}, current_iso{"200"}, log{device, "SimulationCamera"}, q{q}
+  : device{device}, avail_iso{"100", "200", "400", "800"}, current_iso{"200"}, avail_formats{"RAW", "JPEG"}, current_format{"RAW"}, log{device, "SimulationCamera"}, q{q}
 {
 }
 
@@ -75,6 +77,21 @@ bool SimulationCamera::set_iso(const string& iso)
 {
   d->current_iso = iso;
   return true;
+}
+
+vector< string > SimulationCamera::available_formats()
+{
+  return d->avail_formats;
+}
+
+string SimulationCamera::current_format()
+{
+  return d->current_format;
+}
+
+bool SimulationCamera::set_format(const string& format)
+{
+  d->current_format = format; return true;
 }
 
 void SimulationCamera::shoot(Camera::Seconds seconds)

@@ -32,7 +32,7 @@ public:
     enum ImageType { RAW, JPEG };
     Private(INDI::CCD *device, RealCamera *q);
     INDI::CCD *device;
-    Logger log;
+    INDI::Utils::Logger log;
     map<ImageType, GPhotoCPP::ReadImage::ptr> image_parsers;
     shared_ptr< GPhotoCPP::Logger > gphoto_logger;
     shared_ptr< GPhotoCPP::Driver > driver;
@@ -93,6 +93,28 @@ bool RealCamera::set_iso(const string& iso)
     d->camera->save_settings();
     return current_iso() == iso;
 }
+
+vector< string > RealCamera::available_formats()
+{
+  return d->camera->settings().format_choices();
+}
+
+string RealCamera::current_format()
+{
+  return d->camera->settings().format();
+}
+
+bool RealCamera::set_format(const string& format)
+{
+    d->camera->settings().set_format(format);
+    d->camera->save_settings();
+    auto reloaded = current_format();
+    d->log.debug() << "setting new format to " << format << ": " << reloaded;
+    return reloaded == format;
+}
+
+
+
 
 void RealCamera::shoot(INDI::GPhoto::Camera::Seconds seconds)
 {
@@ -219,9 +241,13 @@ void RealCamera::setup_properties(::Properties< std::string >& properties)
         { Widget::Window, {} },
         { Widget::Section, {} },
     };
+    auto format_widget = d->camera->settings().format_widget();
+    auto iso_widget = d->camera->settings().iso_widget();
     auto widgets = make_stream(d->camera->widgets_settings()->all_children())
     .filter([&](WidgetPtr w) {
-        return supported_types[w->type()];
+        return supported_types[w->type()]
+	  && (! format_widget || format_widget->name() != w->name())
+	  && (! iso_widget || iso_widget->name() != w->name());
     })
     .for_each([&](WidgetPtr w) {
         supported_types[w->type()](w);
