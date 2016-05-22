@@ -38,6 +38,7 @@ public:
     shared_ptr< GPhotoCPP::Driver > driver;
     GPhotoCPP::CameraPtr camera;
     GPhotoCPP::Camera::ShotPtr current_shoot;
+    Seconds mirror_lock = Seconds{0};
 
     template<typename T> shared_ptr<T> widget_value(const string &name);
 private:
@@ -46,9 +47,9 @@ private:
 
 RealCamera::Private::Private(INDI::CCD* device, RealCamera* q)
     : device {device},
-log {device, "GPhotoCamera"},
-image_parsers {{RAW, make_shared<GPhotoCPP::ReadRawImage>()}, {JPEG, make_shared<GPhotoCPP::ReadJPEGImage>()}},
-q {q}
+      log {device, "GPhotoCamera"},
+      image_parsers {{RAW, make_shared<GPhotoCPP::ReadRawImage>()}, {JPEG, make_shared<GPhotoCPP::ReadJPEGImage>()}},
+      q{q}
 {
     gphoto_logger = make_shared<GPhotoCPP::Logger>([=](const string &m, GPhotoCPP::Logger::Level l) {
         static map<GPhotoCPP::Logger::Level, INDI::Logger::VerbosityLevel> levels {
@@ -95,7 +96,9 @@ bool RealCamera::set_iso(const string& iso)
 
 void RealCamera::shoot(INDI::GPhoto::Camera::Seconds seconds)
 {
-    d->current_shoot = d->camera->control().shoot(seconds);
+    bool mirror_lock_enabled = d->mirror_lock > Seconds{0};
+    d->log.debug() << "mirrorlock secs: " << d->mirror_lock.count() << ", enabled: " << mirror_lock_enabled;
+    d->current_shoot = d->camera->control().shoot(seconds, mirror_lock_enabled, d->mirror_lock);
 }
 
 INDI::GPhoto::Camera::ShootStatus RealCamera::shoot_status() const
@@ -229,4 +232,9 @@ void RealCamera::setup_properties(::Properties< std::string >& properties)
 	return true;
       }).add("serial_port_value", "Serial Port", "");
     }
+    properties.add_number("mirror_lock", d->device, {d->device->getDeviceName(), "mirror_lock", "Mirror Lock", "Main Control", IP_RW}, [=](const vector<Number::UpdateArgs> &u) {
+      d->log.debug() << "Setting mirror lock to " << get<0>(u[0]);
+      d->mirror_lock = Seconds{get<0>(u[0])};
+      return true;
+    }).add("mirrorlock_sec", "seconds", 0, 10, 1, d->mirror_lock.count(), "%1.0f");
 }
