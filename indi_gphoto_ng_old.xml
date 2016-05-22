@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<devGroup group="CCDs">
+        <device label="GPhoto NG CCD">
+                <driver name="GPhoto NG CCD">indi_gphoto_ng_ccd</driver>
+                <version>0.1</version>
+	</device>
+</devGroup>

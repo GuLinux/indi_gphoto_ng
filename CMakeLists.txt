@@ -14,4 +14,13 @@ add_executable(indi_gphoto_ng_ccd gphoto_ccd.cpp realcamera.cpp simulationcamera
 target_link_libraries(indi_gphoto_ng_ccd indi_properties gphoto++ indidriver gphoto2 gphoto2_port pthread jpeg raw)
 
 install(TARGETS indi_gphoto_ng_ccd RUNTIME DESTINATION bin )
-install(FILES indi_gphoto_ng.xml DESTINATION ${INDI_DATA_DIR})
+
+option(INDI_PREV_XML "INDI <1.2.0 xml file" Off)
+if(INDI_PREV_XML)
+  configure_file(indi_gphoto_ng_old.xml ${CMAKE_CURRENT_BINARY_DIR}/indi_gphoto_ng.xml COPYONLY)
+else(INDI_PREV_XML)
+  configure_file(indi_gphoto_ng.xml ${CMAKE_CURRENT_BINARY_DIR}/indi_gphoto_ng.xml COPYONLY)
+endif(INDI_PREV_XML)
+
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/indi_gphoto_ng.xml DESTINATION ${INDI_DATA_DIR})
