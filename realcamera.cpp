@@ -50,7 +50,7 @@ log {device, "GPhotoCamera"},
 image_parsers {{RAW, make_shared<GPhotoCPP::ReadRawImage>()}, {JPEG, make_shared<GPhotoCPP::ReadJPEGImage>()}},
 q {q}
 {
-    gphoto_logger = make_shared<GPhotoCPP::Logger>([&](const string &m, GPhotoCPP::Logger::Level l) {
+    gphoto_logger = make_shared<GPhotoCPP::Logger>([=](const string &m, GPhotoCPP::Logger::Level l) {
         static map<GPhotoCPP::Logger::Level, INDI::Logger::VerbosityLevel> levels {
             {GPhotoCPP::Logger::ERROR, INDI::Logger::DBG_ERROR },
             {GPhotoCPP::Logger::WARNING, INDI::Logger::DBG_WARNING },
