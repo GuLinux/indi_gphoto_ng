@@ -30,3 +30,9 @@ If correctly installed, it will appear as "GPhoto NG CCD" in your indi client de
 For testing purpouses, you may launch it manually:
 
     indiserver -v indi_gphoto_ng_ccd
+
+Known Issues
+------------
+
+ * If you're using an old INDI version (< 1.2.0) you probably will not see this driver listed in your client devices list. Try running again cmake adding the flaf -DINDI_PREV_XML=On
+ 
