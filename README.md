@@ -34,5 +34,5 @@ For testing purpouses, you may launch it manually:
 Known Issues
 ------------
 
- * If you're using an old INDI version (< 1.2.0) you probably will not see this driver listed in your client devices list. Try running again cmake adding the flaf -DINDI_PREV_XML=On
+ * If you're using an old INDI version (< 1.2.0) you probably will not see this driver listed in your client devices list. Try running again cmake adding the flag -DINDI_PREV_XML=On
  
