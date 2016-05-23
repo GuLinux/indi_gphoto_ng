@@ -3,7 +3,7 @@
 <devGroup group="CCDs">
         <device label="GPhoto NG CCD">
                 <driver name="GPhoto NG CCD">indi_gphoto_ng_ccd</driver>
-                <version>0.1</version>
+                <version>${gphoto_ng_version_str}</version>
 	</device>
 </devGroup>
 </driversList>

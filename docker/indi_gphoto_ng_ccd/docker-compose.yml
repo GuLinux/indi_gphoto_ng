@@ -1,0 +1,8 @@
+version: '2'
+services:
+  wily:
+    build: wily/
+    volumes:
+      - ../../../:/src:ro
+      - /tmp:/dest
+
