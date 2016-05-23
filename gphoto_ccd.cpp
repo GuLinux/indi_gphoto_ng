@@ -140,7 +140,7 @@ bool GPhotoCCD::updateProperties()
             camera->setup_properties(properties[Device]);
             properties[Device].add_switch("ISO", this, {getDeviceName(), "ISO", "ISO", "Image Settings"}, ISR_1OFMANY, [&](const vector<Switch::UpdateArgs> &states) {
                 auto on_switch = make_stream(states).first(Switch::On);
-                return on_switch && camera->set_iso(get<string>(*on_switch));
+                return on_switch && camera->set_iso(get<1>(*on_switch));
             });
 
             for(auto iso: camera->available_iso() )
@@ -148,7 +148,7 @@ bool GPhotoCCD::updateProperties()
 
             properties[Device].add_switch("FORMAT", this, {getDeviceName(), "FORMAT", "FORMAT", "Image Settings"}, ISR_1OFMANY, [&](const vector<Switch::UpdateArgs> &states) {
                 auto on_switch = make_stream(states).first(Switch::On);
-                return on_switch && camera->set_format(get<string>(*on_switch));
+                return on_switch && camera->set_format(get<1>(*on_switch));
             });
 
             for(auto iso: camera->available_formats() )

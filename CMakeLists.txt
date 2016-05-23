@@ -1,8 +1,11 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(indi_gphoto_ng_ccd)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
-
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 find_package(INDI REQUIRED)
+find_package(JPEG REQUIRED)
+find_package(LibRaw REQUIRED)
+find_package(GPHOTO2 REQUIRED)
 include_directories(${INDI_INCLUDE_DIR})
 
 add_subdirectory(INDIProperties/)
@@ -11,7 +14,7 @@ add_subdirectory(libgphoto-cpp)
 include_directories(${GPHOTO_CPP_INCLUDE_DIRS})
 add_executable(indi_gphoto_ng_ccd gphoto_ccd.cpp realcamera.cpp simulationcamera.cpp)
 
-target_link_libraries(indi_gphoto_ng_ccd indi_properties gphoto++ indidriver gphoto2 gphoto2_port pthread jpeg raw)
+target_link_libraries(indi_gphoto_ng_ccd indi_properties gphoto++ ${INDI_DRIVER_LIBRARIES} ${Gphoto2_LIBRARIES} ${JPEG_LIBRARY} ${LIBRAW_LIBRARIES} pthread)
 
 install(TARGETS indi_gphoto_ng_ccd RUNTIME DESTINATION bin )
 
