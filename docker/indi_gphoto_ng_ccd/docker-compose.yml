@@ -3,6 +3,6 @@ services:
   wily:
     build: wily/
     volumes:
-      - ../../../:/src:ro
+      - ../../:/src:ro
       - /tmp:/dest
 
