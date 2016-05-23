@@ -190,7 +190,7 @@ void RealCamera::setup_properties(::Properties< std::string >& properties)
     auto make_identity = [this](WidgetPtr w) {
         return Identity {d->device->getDeviceName(), w->name(), w->label(), w->parent()->label(), w->access() == GPhotoCPP::Widget::ReadOnly ? IP_RO : IP_RW};
     };
-    unordered_map<GPhotoCPP::Widget::Type, function<void(WidgetPtr)>> supported_types {
+    map<GPhotoCPP::Widget::Type, function<void(WidgetPtr)>> supported_types {
         {   Widget::String, [&](WidgetPtr w) {
 		auto wv = [=] { return d->widget_value<Widget::StringValue>(w->name()); };
                 auto widget_value = wv();

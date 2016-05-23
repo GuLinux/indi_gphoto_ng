@@ -13,26 +13,26 @@ using namespace INDI::GPhoto;
 const int POLLMS           = 500;       /* Polling interval 500 ms */
 
 
-std::unique_ptr<GPhotoCCD> simpleCCD(new GPhotoCCD());
+std::unique_ptr<GPhotoCCD> gphotoCCD(new GPhotoCCD());
 
 void ISGetProperties(const char *dev)
 {
-    simpleCCD->ISGetProperties(dev);
+    gphotoCCD->ISGetProperties(dev);
 }
 
 void ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int num)
 {
-    simpleCCD->ISNewSwitch(dev, name, states, names, num);
+    gphotoCCD->ISNewSwitch(dev, name, states, names, num);
 }
 
 void ISNewText(	const char *dev, const char *name, char *texts[], char *names[], int num)
 {
-    simpleCCD->ISNewText(dev, name, texts, names, num);
+    gphotoCCD->ISNewText(dev, name, texts, names, num);
 }
 
 void ISNewNumber(const char *dev, const char *name, double values[], char *names[], int num)
 {
-    simpleCCD->ISNewNumber(dev, name, values, names, num);
+    gphotoCCD->ISNewNumber(dev, name, values, names, num);
 }
 
 void ISNewBLOB (const char *dev, const char *name, int sizes[], int blobsizes[], char *blobs[], char *formats[], char *names[], int n)
@@ -49,7 +49,7 @@ void ISNewBLOB (const char *dev, const char *name, int sizes[], int blobsizes[],
 
 void ISSnoopDevice (XMLEle *root)
 {
-    simpleCCD->ISSnoopDevice(root);
+    gphotoCCD->ISSnoopDevice(root);
 }
 
 GPhotoCCD::GPhotoCCD() : log {this, "GPhotoCCD"}

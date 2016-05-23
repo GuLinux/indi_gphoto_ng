@@ -32,7 +32,7 @@ protected:
     virtual bool saveConfigItems(FILE* fp);
 
 private:
-    enum PropertiesType { Persistent, Device };
+    enum PropertiesType { Persistent = 0, Device = 1 };
     INDI::Properties::PropertiesMap<PropertiesType> properties;
     Camera::ptr camera;
     INDI::Utils::Logger log;
