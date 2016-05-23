@@ -4,5 +4,11 @@ services:
     build: wily/
     volumes:
       - ../../:/src:ro
-      - /tmp:/dest
+      - /tmp/indi_gphoto_ng_dist/wily:/dest
+
+  xenial:
+    build: xenial/
+    volumes:
+      - ../../:/src:ro
+      - /tmp/indi_gphoto_ng_dist/xenial:/dest
 
