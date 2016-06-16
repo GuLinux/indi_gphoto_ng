@@ -4,3 +4,6 @@
 [submodule "INDIProperties"]
 	path = INDIProperties
 	url = https://github.com/GuLinux/INDIProperties.git
+[submodule "gulinux-commons"]
+	path = gulinux-commons
+	url = https://github.com/GuLinux/GuLinux-Commons.git

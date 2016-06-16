@@ -1,12 +1,14 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(indi_gphoto_ng_ccd)
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/")
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/gulinux-commons/cmake/")
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 find_package(INDI REQUIRED)
 find_package(JPEG REQUIRED)
 find_package(LibRaw REQUIRED)
 find_package(GPHOTO2 REQUIRED)
-include_directories(${INDI_INCLUDE_DIR})
+include_directories(${INDI_INCLUDE_DIR} gulinux-commons/)
 
 set(gphoto_ng_major 0)
 set(gphoto_ng_minor 1)
